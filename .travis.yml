@@ -12,7 +12,7 @@ php:
   - 5.5
 
 before_install:
-  - apt-get --qq install libmcrypt-dev
+  - sudo apt-get -qq install libmcrypt-dev
 
 before_script:
   - phpize
