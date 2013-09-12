@@ -129,7 +129,6 @@ static int do_decrypt(const char* text, uint text_len, char* cipher, char* mode,
 	MCRYPT td;
 	int iv_size;
 	int key_size;
-	int data_size;
 	int retval;
 
 	if (!key || !cipher || !mode || !text_len) {
