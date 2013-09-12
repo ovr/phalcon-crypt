@@ -1,0 +1,1 @@
+<?php if (!extension_loaded("phcrypt")) die("skip"); ?>
