@@ -466,7 +466,7 @@ static PHP_METHOD(Phalcon_Ext_Crypt_MCrypt, serialize)
 		ZEND_WRONG_PARAM_COUNT();
 	}
 
-	RETURN_EMPTY_STRING();
+	RETURN_NULL();
 }
 
 static PHP_METHOD(Phalcon_Ext_Crypt_MCrypt, unserialize)
