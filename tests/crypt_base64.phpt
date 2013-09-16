@@ -38,4 +38,5 @@ foreach (array(MCRYPT_MODE_ECB, MCRYPT_MODE_CBC, MCRYPT_MODE_CFB, MCRYPT_MODE_CF
 		assert(rtrim($crypt->decryptBase64($encoded, $key), "\0") === $test);
 	}
 }
+?>
 --EXPECT--

@@ -26,4 +26,5 @@ foreach (array(MCRYPT_MODE_ECB, MCRYPT_MODE_CBC, MCRYPT_MODE_CFB, MCRYPT_MODE_CF
 		assert(rtrim($crypt->decrypt($encrypted, $key), "\0") === $test);
 	}
 }
+?>
 --EXPECT--
