@@ -5,7 +5,10 @@
 #include "phcrypt_mcrypt.h"
 
 #include <Zend/zend.h>
+#include <Zend/zend_exceptions.h>
+#include <Zend/zend_interfaces.h>
 #include <ext/standard/base64.h>
+#include <ext/spl/spl_exceptions.h>
 #include <mcrypt.h>
 #include <fcntl.h>
 
@@ -448,6 +451,29 @@ static PHP_METHOD(Phalcon_Ext_Crypt_MCrypt, getAvailableModes)
 	mcrypt_free_p(modes, count);
 }
 
+static PHP_METHOD(Phalcon_Ext_Crypt_MCrypt, __wakeup)
+{
+	if (UNEXPECTED(ZEND_NUM_ARGS() != 0)) {
+		ZEND_WRONG_PARAM_COUNT();
+	}
+
+	zend_throw_exception(spl_ce_BadMethodCallException, "Unserialization of 'Phalcon\\Ext\\Crypt\\MCrypt' is not allowed", 0 TSRMLS_CC);
+}
+
+static PHP_METHOD(Phalcon_Ext_Crypt_MCrypt, serialize)
+{
+	if (UNEXPECTED(ZEND_NUM_ARGS() != 0)) {
+		ZEND_WRONG_PARAM_COUNT();
+	}
+
+	RETURN_EMPTY_STRING();
+}
+
+static PHP_METHOD(Phalcon_Ext_Crypt_MCrypt, unserialize)
+{
+	zend_throw_exception(spl_ce_BadMethodCallException, "Unserialization of 'Phalcon\\Ext\\Crypt\\MCrypt' is not allowed", 0 TSRMLS_CC);
+}
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_empty, 0, 0, 0)
 ZEND_END_ARG_INFO()
 
@@ -468,6 +494,10 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_endecrypt, 0, 0, 1)
 	ZEND_ARG_INFO(0, key)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_unserialize, 0, 0, 1)
+	ZEND_ARG_INFO(0, str)
+ZEND_END_ARG_INFO()
+
 static
 #if ZEND_MODULE_API_NO > 20060613
 const
@@ -486,6 +516,9 @@ zend_function_entry phcrypt_mcrypt_class_methods[] = {
 	PHP_ME(Phalcon_Ext_Crypt_MCrypt, decryptBase64, arginfo_endecrypt, ZEND_ACC_PUBLIC)
 	PHP_ME(Phalcon_Ext_Crypt_MCrypt, getAvailableCiphers, arginfo_empty, ZEND_ACC_PUBLIC)
 	PHP_ME(Phalcon_Ext_Crypt_MCrypt, getAvailableModes, arginfo_empty, ZEND_ACC_PUBLIC)
+	PHP_ME(Phalcon_Ext_Crypt_MCrypt, __wakeup, arginfo_empty, ZEND_ACC_PUBLIC)
+	PHP_ME(Phalcon_Ext_Crypt_MCrypt, serialize, arginfo_empty, ZEND_ACC_PUBLIC)
+	PHP_ME(Phalcon_Ext_Crypt_MCrypt, unserialize, arginfo_unserialize, ZEND_ACC_PUBLIC)
 	PHP_FE_END
 };
 
@@ -583,12 +616,17 @@ int init_phcrypt_mcrypt(zend_class_entry* iface TSRMLS_DC)
 	if (EXPECTED(phcrypt_mcrypt_ce != NULL)) {
 		phcrypt_mcrypt_ce->ce_flags     |= ZEND_ACC_FINAL_CLASS;
 		phcrypt_mcrypt_ce->create_object = phcrypt_mcrypt_ctor;
+		phcrypt_mcrypt_ce->serialize     = zend_class_serialize_deny;
+		phcrypt_mcrypt_ce->unserialize   = zend_class_unserialize_deny;
 
 		phcrypt_mcrypt_object_handlers = *zend_get_std_object_handlers();
 		phcrypt_mcrypt_object_handlers.get_debug_info = phcrypt_mcrypt_get_debug_info;
 
 		if (iface) {
-			zend_class_implements(phcrypt_mcrypt_ce TSRMLS_CC, 1, iface);
+			zend_class_implements(phcrypt_mcrypt_ce TSRMLS_CC, 2, iface, zend_ce_serializable);
+		}
+		else {
+			zend_class_implements(phcrypt_mcrypt_ce TSRMLS_CC, 1, zend_ce_serializable);
 		}
 
 		return SUCCESS;
