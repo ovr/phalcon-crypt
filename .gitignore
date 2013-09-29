@@ -23,3 +23,7 @@ Makefile.objects
 *.lo
 *.so
 run-tests.php
+*.gcno
+*.gcda
+/.coverage
+/coverage
