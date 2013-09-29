@@ -36,8 +36,21 @@ catch (Exception $e) {
 	assert(!($e instanceof BadMethodCallException));
 	echo $e->getMessage(), PHP_EOL;
 }
+
+// Test serialize() method
+assert(null === $c->serialize());
+
+// Test unserialize() method
+try {
+	$c->unserialize('bogus');
+}
+catch (Exception $e) {
+	assert($e instanceof BadMethodCallException);
+	echo $e->getMessage(), PHP_EOL;
+}
 ?>
 --EXPECT--
 Serialization of 'Phalcon\Ext\Crypt\MCrypt' is not allowed
+Unserialization of 'Phalcon\Ext\Crypt\MCrypt' is not allowed
 Unserialization of 'Phalcon\Ext\Crypt\MCrypt' is not allowed
 Unserialization of 'Phalcon\Ext\Crypt\MCrypt' is not allowed
