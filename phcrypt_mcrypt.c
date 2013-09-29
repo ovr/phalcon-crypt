@@ -25,6 +25,7 @@ typedef struct _phcrypt_mcrypt_object {
 	char* cipher;
 	char* mode;
 	char* key;
+	MCRYPT td;
 	uint key_len;
 } phcrypt_mcrypt_object;
 
@@ -73,20 +74,27 @@ static char* create_iv(size_t size, size_t alloc)
 	return iv;
 }
 
-static int do_encrypt(const char* text, uint text_len, char* cipher, char* mode, const char* key, uint key_len, char** encrypted, uint* encrypted_len TSRMLS_DC)
+static int do_open_module(phcrypt_mcrypt_object* obj TSRMLS_DC)
 {
-	MCRYPT td;
-	int iv_size;
-	int key_size;
-	int data_size;
-	int retval;
+	assert(obj->td == MCRYPT_FAILED);
 
-	if (!key || !cipher || !mode || !text_len) {
+	if (!obj->cipher || !obj->mode) {
 		return FAILURE;
 	}
 
-	td = mcrypt_module_open(cipher, PHG(mcrypt_algorithms_dir), mode, PHG(mcrypt_modes_dir));
-	if (td == MCRYPT_FAILED) {
+	obj->td = mcrypt_module_open(obj->cipher, PHG(mcrypt_algorithms_dir), obj->mode, PHG(mcrypt_modes_dir));
+	return (MCRYPT_FAILED == obj->td) ? FAILURE : SUCCESS;
+}
+
+static int do_encrypt(MCRYPT td, const char* text, uint text_len, const char* key, uint key_len, char** encrypted, uint* encrypted_len)
+{
+	int iv_size;
+	int key_size;
+	int data_size;
+
+	assert(td != MCRYPT_FAILED);
+
+	if (!key || !text_len) {
 		return FAILURE;
 	}
 
@@ -111,52 +119,39 @@ static int do_encrypt(const char* text, uint text_len, char* cipher, char* mode,
 			memcpy(*encrypted + iv_size, text, text_len);
 			mcrypt_generic(td, (void*)(*encrypted + iv_size), data_size);
 			*encrypted_len = iv_size + data_size;
-			retval = SUCCESS;
 			mcrypt_generic_deinit(td);
+			return SUCCESS;
 		}
-		else {
-			efree(*encrypted);
-			retval = FAILURE;
-		}
-	}
-	else {
-		retval = FAILURE;
+
+		efree(*encrypted);
 	}
 
-	mcrypt_module_close(td);
-	return retval;
+	return FAILURE;
 }
 
-static int do_decrypt(const char* text, uint text_len, char* cipher, char* mode, const char* key, uint key_len, char** decrypted, uint* decrypted_len TSRMLS_DC)
+static int do_decrypt(MCRYPT td, const char* text, uint text_len, const char* key, uint key_len, char** decrypted, uint* decrypted_len)
 {
-	MCRYPT td;
 	int iv_size;
 	int key_size;
-	int retval;
 
-	if (!key || !cipher || !mode || !text_len) {
-		return FAILURE;
-	}
+	assert(td != MCRYPT_FAILED);
 
-	td = mcrypt_module_open(cipher, PHG(mcrypt_algorithms_dir), mode, PHG(mcrypt_modes_dir));
-	if (td == MCRYPT_FAILED) {
+	if (!key || !text_len) {
 		return FAILURE;
 	}
 
 	iv_size  = mcrypt_enc_get_iv_size(td);
 	key_size = mcrypt_enc_get_key_size(td);
 
+	if (iv_size >= text_len) {
+		return FAILURE;
+	}
+
 	if (mcrypt_enc_is_block_mode(td)) {
 		int block_size = mcrypt_enc_get_block_size(td);
 		if ((text_len - iv_size) % block_size) {
-			mcrypt_module_close(td);
 			return FAILURE;
 		}
-	}
-
-	if (iv_size >= text_len) {
-		mcrypt_module_close(td);
-		return FAILURE;
 	}
 
 	if (key_len > key_size) {
@@ -170,14 +165,10 @@ static int do_decrypt(const char* text, uint text_len, char* cipher, char* mode,
 		mdecrypt_generic(td, (void*)*decrypted, text_len - iv_size);
 		*decrypted_len = text_len - iv_size;
 		mcrypt_generic_deinit(td);
-		retval = SUCCESS;
-	}
-	else {
-		retval = FAILURE;
+		return SUCCESS;
 	}
 
-	mcrypt_module_close(td);
-	return retval;
+	return FAILURE;
 }
 
 static PHP_METHOD(Phalcon_Ext_Crypt_MCrypt, __construct)
@@ -187,6 +178,7 @@ static PHP_METHOD(Phalcon_Ext_Crypt_MCrypt, __construct)
 	obj = get_object(getThis() TSRMLS_CC);
 	obj->cipher = estrdup("blowfish");
 	obj->mode   = estrdup("ncfb");
+	obj->td     = MCRYPT_FAILED;
 }
 
 static PHP_METHOD(Phalcon_Ext_Crypt_MCrypt, getCipher)
@@ -218,6 +210,13 @@ static PHP_METHOD(Phalcon_Ext_Crypt_MCrypt, setCipher)
 	obj = get_object(getThis() TSRMLS_CC);
 	if (obj->cipher) {
 		efree(obj->cipher);
+		if (obj->td != MCRYPT_FAILED) {
+			mcrypt_module_close(obj->td);
+			obj->td = MCRYPT_FAILED;
+		}
+	}
+	else {
+		assert(obj->td == MCRYPT_FAILED);
 	}
 
 	obj->cipher = estrndup(cipher, cipher_len);
@@ -253,6 +252,13 @@ static PHP_METHOD(Phalcon_Ext_Crypt_MCrypt, setMode)
 	obj = get_object(getThis() TSRMLS_CC);
 	if (obj->mode) {
 		efree(obj->mode);
+		if (obj->td != MCRYPT_FAILED) {
+			mcrypt_module_close(obj->td);
+			obj->td = MCRYPT_FAILED;
+		}
+	}
+	else {
+		assert(obj->td == MCRYPT_FAILED);
 	}
 
 	obj->mode = estrndup(mode, mode_len);
@@ -308,13 +314,18 @@ static PHP_METHOD(Phalcon_Ext_Crypt_MCrypt, encrypt)
 	}
 
 	obj = get_object(getThis() TSRMLS_CC);
+	if (MCRYPT_FAILED == obj->td) {
+		if (FAILURE == do_open_module(obj TSRMLS_CC)) {
+			RETURN_FALSE;
+		}
+	}
 
 	if (!key) {
 		key     = obj->key;
 		key_len = obj->key_len;
 	}
 
-	if (EXPECTED(SUCCESS == do_encrypt(text, text_len, obj->cipher, obj->mode, key, key_len, &encrypted, &encrypted_len TSRMLS_CC))) {
+	if (EXPECTED(SUCCESS == do_encrypt(obj->td, text, text_len, key, key_len, &encrypted, &encrypted_len))) {
 		RETURN_STRINGL(encrypted, encrypted_len, 0);
 	}
 
@@ -334,13 +345,18 @@ static PHP_METHOD(Phalcon_Ext_Crypt_MCrypt, decrypt)
 	}
 
 	obj = get_object(getThis() TSRMLS_CC);
+	if (MCRYPT_FAILED == obj->td) {
+		if (FAILURE == do_open_module(obj TSRMLS_CC)) {
+			RETURN_FALSE;
+		}
+	}
 
 	if (!key) {
 		key     = obj->key;
 		key_len = obj->key_len;
 	}
 
-	if (EXPECTED(SUCCESS == do_decrypt(text, text_len, obj->cipher, obj->mode, key, key_len, &decrypted, &decrypted_len TSRMLS_CC))) {
+	if (EXPECTED(SUCCESS == do_decrypt(obj->td, text, text_len, key, key_len, &decrypted, &decrypted_len))) {
 		RETURN_STRINGL(decrypted, decrypted_len, 0);
 	}
 
@@ -360,13 +376,18 @@ static PHP_METHOD(Phalcon_Ext_Crypt_MCrypt, encryptBase64)
 	}
 
 	obj = get_object(getThis() TSRMLS_CC);
+	if (MCRYPT_FAILED == obj->td) {
+		if (FAILURE == do_open_module(obj TSRMLS_CC)) {
+			RETURN_FALSE;
+		}
+	}
 
 	if (!key) {
 		key     = obj->key;
 		key_len = obj->key_len;
 	}
 
-	if (EXPECTED(SUCCESS == do_encrypt(text, text_len, obj->cipher, obj->mode, key, key_len, &encrypted, &encrypted_len TSRMLS_CC))) {
+	if (EXPECTED(SUCCESS == do_encrypt(obj->td, text, text_len, key, key_len, &encrypted, &encrypted_len))) {
 		char* encoded;
 		int encoded_len;
 
@@ -399,13 +420,18 @@ static PHP_METHOD(Phalcon_Ext_Crypt_MCrypt, decryptBase64)
 	}
 
 	obj = get_object(getThis() TSRMLS_CC);
+	if (MCRYPT_FAILED == obj->td) {
+		if (FAILURE == do_open_module(obj TSRMLS_CC)) {
+			RETURN_FALSE;
+		}
+	}
 
 	if (!key) {
 		key     = obj->key;
 		key_len = obj->key_len;
 	}
 
-	if (EXPECTED(SUCCESS == do_decrypt(decoded, decoded_len, obj->cipher, obj->mode, key, key_len, &decrypted, &decrypted_len TSRMLS_CC))) {
+	if (EXPECTED(SUCCESS == do_decrypt(obj->td, decoded, decoded_len, key, key_len, &decrypted, &decrypted_len))) {
 		RETVAL_STRINGL(decrypted, decrypted_len, 0);
 	}
 	else {
@@ -536,6 +562,10 @@ static void phcrypt_mcrypt_dtor(void* v TSRMLS_DC)
 
 	if (obj->key) {
 		efree(obj->key);
+	}
+
+	if (obj->td != MCRYPT_FAILED) {
+		mcrypt_module_close(obj->td);
 	}
 
 	zend_object_std_dtor(&(obj->obj) TSRMLS_CC);
