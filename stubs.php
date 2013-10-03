@@ -70,4 +70,45 @@ class MCrypt implements \Phalcon\CryptInterface, \Serializable
 	 * @throw BadMethodCallException
 	 */
 	public function unserialize($str);
+
+	/**
+	 * @param string $cipher
+	 * @return boolean
+	 */
+	public function isBlockCipher($cipher = null);
+
+
+	/**
+	 * @param string $mode
+	 * @return boolean
+	 */
+	public function isBlockMode($mode = null);
+
+	/**
+	 * @param string $mode
+	 * @return boolean
+	 */
+	public function isBlockCipherMode($mode = null);
+
+	/**
+	 * @return boolean
+	 */
+	public function modeHasIV();
+
+	/**
+	 * @return int
+	 */
+	public function getIVSize();
+
+	/**
+	 * @param string $cipher
+	 * @return int
+	 */
+	public function getKeySize($cipher = null);
+
+	/**
+	 * @param string $cipher
+	 * @return int
+	 */
+	public function getBlockSize($cipher = null);
 }
