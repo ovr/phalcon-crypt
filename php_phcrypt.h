@@ -23,4 +23,13 @@ ZEND_EXTERN_MODULE_GLOBALS(phcrypt);
 #define PHG(v)  (phcrypt_globals.v)
 #endif
 
+#ifndef EXPECTED
+# define EXPECTED(condition)   (condition)
+# define UNEXPECTED(condition) (condition)
+#endif
+
+#ifndef PHP_FE_END
+#define PHP_FE_END            { NULL, NULL, NULL, 0, 0 }
+#endif
+
 #endif

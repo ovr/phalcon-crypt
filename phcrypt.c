@@ -6,9 +6,10 @@
 #include "phcrypt_mcrypt.h"
 
 #include <main/php.h>
+#include <main/php_ini.h>
 #include <Zend/zend.h>
 
-ZEND_DECLARE_MODULE_GLOBALS(phcrypt)
+ZEND_DECLARE_MODULE_GLOBALS(phcrypt);
 
 PHP_INI_BEGIN()
 	STD_PHP_INI_ENTRY("mcrypt.algorithms_dir", NULL, PHP_INI_ALL, OnUpdateString, mcrypt_algorithms_dir, zend_phcrypt_globals, phcrypt_globals)
