@@ -89,6 +89,7 @@ static int do_encrypt(MCRYPT td, const char* text, uint text_len, const char* ke
 	int iv_size;
 	int key_size;
 	int data_size;
+	int code;
 
 	assert(td != MCRYPT_FAILED);
 
@@ -119,7 +120,8 @@ static int do_encrypt(MCRYPT td, const char* text, uint text_len, const char* ke
 
 	*encrypted = create_iv(iv_size, iv_size + data_size);
 	if (EXPECTED(*encrypted != NULL)) {
-		if (EXPECTED(!mcrypt_generic_init(td, (void*)key, (int)key_len, (void*)*encrypted))) {
+		code = mcrypt_generic_init(td, (void*)key, (int)key_len, (void*)*encrypted);
+		if (EXPECTED(!code)) {
 			memcpy(*encrypted + iv_size, text, text_len);
 
 			if ((uint)data_size > text_len) {
@@ -133,8 +135,16 @@ static int do_encrypt(MCRYPT td, const char* text, uint text_len, const char* ke
 			mcrypt_generic_deinit(td);
 			return SUCCESS;
 		}
+		else {
+			TSRMLS_FETCH();
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "mcrypt_generic_init(): %s", mcrypt_strerror(code));
+		}
 
 		efree(*encrypted);
+	}
+	else {
+		TSRMLS_FETCH();
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Failed to create the initialization vector");
 	}
 
 	return FAILURE;
@@ -145,6 +155,7 @@ static int do_decrypt(MCRYPT td, const char* text, uint text_len, const char* ke
 	int iv_size;
 	int key_size;
 	int block_size;
+	int code;
 
 	assert(td != MCRYPT_FAILED);
 
@@ -177,7 +188,8 @@ static int do_decrypt(MCRYPT td, const char* text, uint text_len, const char* ke
 
 	*decrypted = ecalloc(text_len - iv_size + 1, 1);
 
-	if (EXPECTED(!mcrypt_generic_init(td, (void*)key, (int)key_len, (void*)text))) {
+	code = mcrypt_generic_init(td, (void*)key, (int)key_len, (void*)text);
+	if (EXPECTED(!code)) {
 		memcpy(*decrypted, text + iv_size, text_len - iv_size);
 		mdecrypt_generic(td, (void*)*decrypted, text_len - iv_size);
 		*decrypted_len = text_len - iv_size;
@@ -200,6 +212,10 @@ static int do_decrypt(MCRYPT td, const char* text, uint text_len, const char* ke
 		}
 
 		return SUCCESS;
+	}
+	else {
+		TSRMLS_FETCH();
+		php_error_docref(NULL TSRMLS_CC, E_WARNING, "mcrypt_generic_deinit(): %s", mcrypt_strerror(code));
 	}
 
 	return FAILURE;
