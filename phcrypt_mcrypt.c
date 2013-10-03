@@ -550,6 +550,137 @@ static PHP_METHOD(Phalcon_Ext_Crypt_MCrypt, unserialize)
 	zend_throw_exception(spl_ce_BadMethodCallException, "Unserialization of 'Phalcon\\Ext\\Crypt\\MCrypt' is not allowed", 0 TSRMLS_CC);
 }
 
+static PHP_METHOD(Phalcon_Ext_Crypt_MCrypt, isBlockCipher)
+{
+	char* cipher = NULL;
+	uint cipher_len;
+
+	if (UNEXPECTED(FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s", &cipher, &cipher_len))) {
+		RETURN_NULL();
+	}
+
+	if (!cipher) {
+		phcrypt_mcrypt_object* obj = get_object(getThis() TSRMLS_CC);
+		cipher = obj->cipher;
+		assert(cipher != NULL);
+	}
+
+	RETVAL_BOOL(mcrypt_module_is_block_algorithm(cipher, PHG(mcrypt_algorithms_dir)));
+}
+
+static PHP_METHOD(Phalcon_Ext_Crypt_MCrypt, isBlockMode)
+{
+	char* mode = NULL;
+	uint mode_len;
+
+	if (UNEXPECTED(FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s", &mode, &mode_len))) {
+		RETURN_NULL();
+	}
+
+	if (!mode) {
+		phcrypt_mcrypt_object* obj = get_object(getThis() TSRMLS_CC);
+		mode = obj->mode;
+		assert(mode != NULL);
+	}
+
+	RETVAL_BOOL(mcrypt_module_is_block_mode(mode, PHG(mcrypt_modes_dir)));
+}
+
+static PHP_METHOD(Phalcon_Ext_Crypt_MCrypt, isBlockCipherMode)
+{
+	char* mode = NULL;
+	uint mode_len;
+
+	if (UNEXPECTED(FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s", &mode, &mode_len))) {
+		RETURN_NULL();
+	}
+
+	if (!mode) {
+		phcrypt_mcrypt_object* obj = get_object(getThis() TSRMLS_CC);
+		mode = obj->mode;
+		assert(mode != NULL);
+	}
+
+	RETVAL_BOOL(mcrypt_module_is_block_algorithm_mode(mode, PHG(mcrypt_modes_dir)));
+}
+
+static PHP_METHOD(Phalcon_Ext_Crypt_MCrypt, modeHasIV)
+{
+	phcrypt_mcrypt_object* obj;
+
+	if (UNEXPECTED(ZEND_NUM_ARGS() != 0)) {
+		ZEND_WRONG_PARAM_COUNT();
+	}
+
+	obj = get_object(getThis() TSRMLS_CC);
+
+	if (MCRYPT_FAILED == obj->td) {
+		if (FAILURE == do_open_module(obj TSRMLS_CC)) {
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "Failed to open module for %s/%s", obj->cipher, obj->mode);
+			RETURN_NULL();
+		}
+	}
+
+	RETVAL_BOOL(mcrypt_enc_mode_has_iv(obj->td));
+}
+
+static PHP_METHOD(Phalcon_Ext_Crypt_MCrypt, getIVSize)
+{
+	phcrypt_mcrypt_object* obj;
+
+	if (UNEXPECTED(ZEND_NUM_ARGS() != 0)) {
+		ZEND_WRONG_PARAM_COUNT();
+	}
+
+	obj = get_object(getThis() TSRMLS_CC);
+
+	if (MCRYPT_FAILED == obj->td) {
+		if (FAILURE == do_open_module(obj TSRMLS_CC)) {
+			php_error_docref(NULL TSRMLS_CC, E_WARNING, "Failed to open module for %s/%s", obj->cipher, obj->mode);
+			RETURN_NULL();
+		}
+	}
+
+	RETVAL_LONG(mcrypt_enc_get_iv_size(obj->td));
+}
+
+static PHP_METHOD(Phalcon_Ext_Crypt_MCrypt, getKeySize)
+{
+	char* cipher = NULL;
+	uint cipher_len;
+
+	if (UNEXPECTED(FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s", &cipher, &cipher_len))) {
+		RETURN_NULL();
+	}
+
+	if (!cipher) {
+		phcrypt_mcrypt_object* obj = get_object(getThis() TSRMLS_CC);
+		cipher = obj->cipher;
+		assert(cipher != NULL);
+	}
+
+	RETVAL_LONG(mcrypt_module_get_algo_key_size(cipher, PHG(mcrypt_algorithms_dir)));
+}
+
+static PHP_METHOD(Phalcon_Ext_Crypt_MCrypt, getBlockSize)
+{
+	char* cipher = NULL;
+	uint cipher_len;
+
+	if (UNEXPECTED(FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s", &cipher, &cipher_len))) {
+		RETURN_NULL();
+	}
+
+	if (!cipher) {
+		phcrypt_mcrypt_object* obj = get_object(getThis() TSRMLS_CC);
+		cipher = obj->cipher;
+		assert(cipher != NULL);
+	}
+
+	RETVAL_LONG(mcrypt_module_get_algo_block_size(cipher, PHG(mcrypt_algorithms_dir)));
+}
+
+
 ZEND_BEGIN_ARG_INFO_EX(arginfo_empty, 0, 0, 0)
 ZEND_END_ARG_INFO()
 
@@ -574,6 +705,15 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_unserialize, 0, 0, 1)
 	ZEND_ARG_INFO(0, str)
 ZEND_END_ARG_INFO()
 
+ZEND_BEGIN_ARG_INFO_EX(arginfo_isblockcipher, 0, 0, 0)
+	ZEND_ARG_INFO(0, cipher)
+ZEND_END_ARG_INFO()
+
+ZEND_BEGIN_ARG_INFO_EX(arginfo_isblockmode, 0, 0, 0)
+	ZEND_ARG_INFO(0, mode)
+ZEND_END_ARG_INFO()
+
+
 static
 #if ZEND_MODULE_API_NO > 20060613
 const
@@ -595,6 +735,13 @@ zend_function_entry phcrypt_mcrypt_class_methods[] = {
 	PHP_ME(Phalcon_Ext_Crypt_MCrypt, __wakeup, arginfo_empty, ZEND_ACC_PUBLIC)
 	PHP_ME(Phalcon_Ext_Crypt_MCrypt, serialize, arginfo_empty, ZEND_ACC_PUBLIC)
 	PHP_ME(Phalcon_Ext_Crypt_MCrypt, unserialize, arginfo_unserialize, ZEND_ACC_PUBLIC)
+	PHP_ME(Phalcon_Ext_Crypt_MCrypt, isBlockCipher, arginfo_isblockcipher, ZEND_ACC_PUBLIC)
+	PHP_ME(Phalcon_Ext_Crypt_MCrypt, isBlockMode, arginfo_isblockmode, ZEND_ACC_PUBLIC)
+	PHP_ME(Phalcon_Ext_Crypt_MCrypt, isBlockCipherMode, arginfo_isblockmode, ZEND_ACC_PUBLIC)
+	PHP_ME(Phalcon_Ext_Crypt_MCrypt, modeHasIV, arginfo_empty, ZEND_ACC_PUBLIC)
+	PHP_ME(Phalcon_Ext_Crypt_MCrypt, getIVSize, arginfo_empty, ZEND_ACC_PUBLIC)
+	PHP_ME(Phalcon_Ext_Crypt_MCrypt, getKeySize, arginfo_isblockcipher, ZEND_ACC_PUBLIC)
+	PHP_ME(Phalcon_Ext_Crypt_MCrypt, getBlockSize, arginfo_isblockcipher, ZEND_ACC_PUBLIC)
 	PHP_FE_END
 };
 
