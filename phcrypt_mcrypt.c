@@ -560,14 +560,14 @@ static PHP_METHOD(Phalcon_Ext_Crypt_MCrypt, unserialize)
 
 static PHP_METHOD(Phalcon_Ext_Crypt_MCrypt, isBlockCipher)
 {
-	char* cipher = NULL;
-	uint cipher_len;
+	char* cipher;
+	uint cipher_len = 0;
 
 	if (UNEXPECTED(FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s", &cipher, &cipher_len))) {
 		RETURN_NULL();
 	}
 
-	if (!cipher) {
+	if (!cipher_len) {
 		phcrypt_mcrypt_object* obj = get_object(getThis() TSRMLS_CC);
 		cipher = obj->cipher;
 		assert(cipher != NULL);
@@ -578,14 +578,14 @@ static PHP_METHOD(Phalcon_Ext_Crypt_MCrypt, isBlockCipher)
 
 static PHP_METHOD(Phalcon_Ext_Crypt_MCrypt, isBlockMode)
 {
-	char* mode = NULL;
-	uint mode_len;
+	char* mode;
+	uint mode_len = 0;
 
 	if (UNEXPECTED(FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s", &mode, &mode_len))) {
 		RETURN_NULL();
 	}
 
-	if (!mode) {
+	if (!mode_len) {
 		phcrypt_mcrypt_object* obj = get_object(getThis() TSRMLS_CC);
 		mode = obj->mode;
 		assert(mode != NULL);
@@ -596,14 +596,14 @@ static PHP_METHOD(Phalcon_Ext_Crypt_MCrypt, isBlockMode)
 
 static PHP_METHOD(Phalcon_Ext_Crypt_MCrypt, isBlockCipherMode)
 {
-	char* mode = NULL;
-	uint mode_len;
+	char* mode;
+	uint mode_len = 0;
 
 	if (UNEXPECTED(FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s", &mode, &mode_len))) {
 		RETURN_NULL();
 	}
 
-	if (!mode) {
+	if (!mode_len) {
 		phcrypt_mcrypt_object* obj = get_object(getThis() TSRMLS_CC);
 		mode = obj->mode;
 		assert(mode != NULL);
@@ -654,14 +654,14 @@ static PHP_METHOD(Phalcon_Ext_Crypt_MCrypt, getIVSize)
 
 static PHP_METHOD(Phalcon_Ext_Crypt_MCrypt, getKeySize)
 {
-	char* cipher = NULL;
-	uint cipher_len;
+	char* cipher;
+	uint cipher_len = 0;
 
 	if (UNEXPECTED(FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s", &cipher, &cipher_len))) {
 		RETURN_NULL();
 	}
 
-	if (!cipher) {
+	if (!cipher_len) {
 		phcrypt_mcrypt_object* obj = get_object(getThis() TSRMLS_CC);
 		cipher = obj->cipher;
 		assert(cipher != NULL);
@@ -672,14 +672,14 @@ static PHP_METHOD(Phalcon_Ext_Crypt_MCrypt, getKeySize)
 
 static PHP_METHOD(Phalcon_Ext_Crypt_MCrypt, getBlockSize)
 {
-	char* cipher = NULL;
-	uint cipher_len;
+	char* cipher;
+	uint cipher_len = 0;
 
 	if (UNEXPECTED(FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s", &cipher, &cipher_len))) {
 		RETURN_NULL();
 	}
 
-	if (!cipher) {
+	if (!cipher_len) {
 		phcrypt_mcrypt_object* obj = get_object(getThis() TSRMLS_CC);
 		cipher = obj->cipher;
 		assert(cipher != NULL);
