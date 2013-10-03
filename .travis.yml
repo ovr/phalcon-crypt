@@ -15,9 +15,7 @@ before_install:
   - sudo apt-get -qq install libmcrypt-dev
 
 before_script:
-  - phpize
-  - ./configure CFLAGS="-O2 -g -Wall -Werror" --silent
-  - make --silent
+  - phpize && ./configure CFLAGS="-O2 -g -Wall -Werror" --silent && make --silent
 
 script:
   - NO_INTERACTION=1 make test
