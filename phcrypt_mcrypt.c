@@ -104,6 +104,12 @@ static int do_encrypt(MCRYPT td, const char* text, uint text_len, const char* ke
 	if (mcrypt_enc_is_block_mode(td)) {
 		int block_size = mcrypt_enc_get_block_size(td);
 		data_size      = ((text_len - 1) / block_size + 1) * block_size;
+
+		assert(block_size > 0);
+
+		if (block_size != 1 && data_size == text_len) {
+			data_size += block_size;
+		}
 	}
 	else {
 		data_size = text_len;
@@ -117,6 +123,13 @@ static int do_encrypt(MCRYPT td, const char* text, uint text_len, const char* ke
 	if (EXPECTED(*encrypted != NULL)) {
 		if (EXPECTED(!mcrypt_generic_init(td, (void*)key, (int)key_len, (void*)*encrypted))) {
 			memcpy(*encrypted + iv_size, text, text_len);
+
+			if ((uint)data_size > text_len) {
+				uint diff = (uint)data_size - text_len;
+				assert(diff < 256);
+				memset(*encrypted + iv_size + text_len, diff, diff);
+			}
+
 			mcrypt_generic(td, (void*)(*encrypted + iv_size), data_size);
 			*encrypted_len = iv_size + data_size;
 			mcrypt_generic_deinit(td);
@@ -133,6 +146,7 @@ static int do_decrypt(MCRYPT td, const char* text, uint text_len, const char* ke
 {
 	int iv_size;
 	int key_size;
+	int block_size;
 
 	assert(td != MCRYPT_FAILED);
 
@@ -148,10 +162,15 @@ static int do_decrypt(MCRYPT td, const char* text, uint text_len, const char* ke
 	}
 
 	if (mcrypt_enc_is_block_mode(td)) {
-		int block_size = mcrypt_enc_get_block_size(td);
+		block_size = mcrypt_enc_get_block_size(td);
+		assert(block_size > 0);
+
 		if ((text_len - iv_size) % block_size) {
 			return FAILURE;
 		}
+	}
+	else {
+		block_size = 1;
 	}
 
 	if (key_len > key_size) {
@@ -165,6 +184,23 @@ static int do_decrypt(MCRYPT td, const char* text, uint text_len, const char* ke
 		mdecrypt_generic(td, (void*)*decrypted, text_len - iv_size);
 		*decrypted_len = text_len - iv_size;
 		mcrypt_generic_deinit(td);
+
+		if (block_size != 1) {
+			unsigned char padding = (*decrypted)[*decrypted_len-1];
+			if (padding <= block_size) {
+				char* s = *decrypted + *decrypted_len - padding;
+				while (*s && *s == padding) {
+					++s;
+				}
+
+				*decrypted_len -= padding;
+				(*decrypted)[*decrypted_len] = 0;
+				return *s ? FAILURE : SUCCESS;
+			}
+
+			return FAILURE;
+		}
+
 		return SUCCESS;
 	}
 
