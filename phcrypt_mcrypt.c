@@ -39,16 +39,14 @@ static char* create_iv(size_t size, size_t alloc)
 	char* iv;
 
 	iv = ecalloc(alloc + 1, 1);
+	if (size) {
 #if PHP_WIN32
-	{
 		BYTE* iv_b = (BYTE*)iv;
 		if (php_win32_get_random_bytes(iv_b, (size_t)size) == FAILURE) {
 			efree(iv);
 			return NULL;
 		}
-	}
 #else
-	{
 		size_t read_bytes = 0;
 		int fd = open("/dev/urandom", O_RDONLY);
 		if (EXPECTED(fd >= 0)) {
@@ -68,8 +66,8 @@ static char* create_iv(size_t size, size_t alloc)
 			efree(iv);
 			return NULL;
 		}
-	}
 #endif
+	}
 
 	return iv;
 }
