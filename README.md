@@ -13,7 +13,7 @@ A 10 megabyte string was encrypted with Blowfish in nCFB mode.
   * mcrypt:
     * memory usage: 20,972,512 bytes
     * peak usage: 31,692,832 bytes
-  * Phalcon\Crypt:
+  * Phalcon\Crypt (1.3.0):
     * memory usage: 20,972,672 bytes
     * peak usage: 42,179,984 bytes
   * phcrypt:
