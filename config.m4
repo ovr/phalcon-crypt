@@ -17,8 +17,11 @@ AC_DEFUN([MCRYPT_CHECK_VERSION],[
 
 PHP_ARG_ENABLE([phcrypt], [whether to enable Phalcon Crypt module], [  --enable-phalcon-crypt  Enable Phalcon Crypt module])
 if test "$PHP_PHCRYPT" != no; then
-	PHP_ARG_WITH([mcrypt], [for mcrypt support], [  --with-mcrypt[=DIR]       Include mcrypt support])
 
+dnl
+dnl MCrypt
+dnl
+	PHP_ARG_WITH([mcrypt], [for mcrypt support], [  --with-mcrypt[=DIR]       Include mcrypt support])
 	if test "$PHP_MCRYPT" != "no"; then
 		for i in $PHP_MCRYPT /usr/local /usr; do
 			test -f $i/include/mcrypt.h && MCRYPT_DIR=$i && break
@@ -50,6 +53,28 @@ if test "$PHP_PHCRYPT" != no; then
 
 		PHP_SUBST([MCRYPT_SHARED_LIBADD])
 	fi
+
+dnl
+dnl OpenSSL
+dnl
+	PHP_ARG_WITH(openssl, for OpenSSL support, [  --with-openssl[=DIR]    Include OpenSSL support (requires OpenSSL >= 0.9.6)])
+
+	if test "$PHP_OPENSSL" != "no"; then
+		PHP_SUBST(OPENSSL_SHARED_LIBADD)
+
+		AC_CHECK_LIB(ssl, DSA_get_default_method, AC_DEFINE(HAVE_DSA_DEFAULT_METHOD, 1, [OpenSSL 0.9.7 or later]))
+		AC_CHECK_LIB(crypto, X509_free, AC_DEFINE(HAVE_DSA_DEFAULT_METHOD, 1, [OpenSSL 0.9.7 or later]))
+
+		PHP_SETUP_OPENSSL(OPENSSL_SHARED_LIBADD,
+			[
+				AC_DEFINE(HAVE_OPENSSL_EXT,1,[ ])
+			],
+			[
+				AC_MSG_ERROR([OpenSSL check failed. Please check config.log for more information.])
+			]
+		)
+	fi
+
 
 	PHP_NEW_EXTENSION([phcrypt], [phcrypt.c phcrypt_mcrypt.c], [$ext_shared])
 	PHP_ADD_MAKEFILE_FRAGMENT
@@ -114,3 +139,4 @@ if test "$PHP_PHCRYPT" != no; then
 		EXTRA_LDFLAGS="$EXTRA_LDFLAGS -precious-files-regex \.gcno\\\$$"
 	fi
 fi
+
