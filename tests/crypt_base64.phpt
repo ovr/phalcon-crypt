@@ -1,7 +1,7 @@
 --TEST--
 Encryption/Decryption Test (BASE64)
 --SKIPIF--
-<?php include('skipif.inc'); ?>
+<?php include('skipif-mcrypt.inc'); ?>
 --FILE--
 <?php
 $tests = array(

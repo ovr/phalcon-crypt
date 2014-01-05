@@ -16,3 +16,6 @@ quit
 EOF
 	fi
 done
+
+php -r 'print_r(openssl_get_cipher_methods());'
+cat /proc/cpuinfo | grep flags

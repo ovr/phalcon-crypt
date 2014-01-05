@@ -26,18 +26,32 @@ foreach ($crypt->getAvailableCiphers() as $cipher) {
 		continue;
 	}
 
+	if (preg_match('/^AES-(?:256|128)-CBC-HMAC-SHA1$/i', $cipher)) {
+	// These ones lead to a segmentation fault.
+	// Could be a bug in OpenSSL
+	// See
+	//  * https://github.com/jruby/jruby/issues/919
+	//  * https://bugs.ruby-lang.org/issues/8690
+		continue;
+	}
+
 	$crypt->setCipher($cipher);
 
 	foreach ($tests as $key => $test) {
 		$crypt->setKey($key);
 		$encrypted = $crypt->encrypt($test);
 		$decrypted = $crypt->decrypt($encrypted);
-		assert($decrypted === $test);
+		if ($decrypted !== $test) {
+			echo $cipher, PHP_EOL;
+		}
 	}
 
 	foreach ($tests as $key => $test) {
 		$encrypted = $crypt->encrypt($test, $key);
-		assert($crypt->decrypt($encrypted, $key) === $test);
+		$decrypted = $crypt->decrypt($encrypted, $key);
+		if ($decrypted !== $test) {
+			echo $cipher, PHP_EOL;
+		}
 	}
 
 }

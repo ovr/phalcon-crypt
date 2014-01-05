@@ -1,7 +1,7 @@
 --TEST--
-Passing incorrect arguments
+Passing incorrect arguments (MCrypt)
 --SKIPIF--
-<?php include('skipif.inc'); ?>
+<?php include('skipif-mcrypt.inc'); ?>
 --FILE--
 <?php
 $c = new \Phalcon\Ext\Crypt\MCrypt();

@@ -1,7 +1,7 @@
 --TEST--
 PKCS-7 padding
 --SKIPIF--
-<?php include('skipif.inc'); ?>
+<?php include('skipif-mcrypt.inc'); ?>
 --FILE--
 <?php
 
