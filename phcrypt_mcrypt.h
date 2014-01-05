@@ -3,8 +3,12 @@
 
 #include "php_phcrypt.h"
 
-extern zend_class_entry* phcrypt_mcrypt_ce;
+#ifdef PHCRYPT_HAVE_LIBMCRYPT
 
-int init_phcrypt_mcrypt(zend_class_entry* iface TSRMLS_DC);
+PHPCRYPT_VISIBILITY_HIDDEN extern zend_class_entry* phcrypt_mcrypt_ce;
+
+PHPCRYPT_VISIBILITY_HIDDEN int init_phcrypt_mcrypt(zend_class_entry* iface TSRMLS_DC);
+
+#endif
 
 #endif /* PHCRYPT_MCRYPT_H */

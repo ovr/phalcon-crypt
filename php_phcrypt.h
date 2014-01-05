@@ -3,8 +3,12 @@
 
 #include <main/php.h>
 
+#ifdef HAVE_CONFIG_H
+#	include "config.h"
+#endif
+
 #define PHP_PHCRYPT_EXTNAME  "phcrypt"
-#define PHP_PHCRYPT_EXTVER   "0.1"
+#define PHP_PHCRYPT_EXTVER   "0.2"
 
 #ifndef ZEND_MOD_END
 #define ZEND_MOD_END { NULL, NULL, NULL, 0 }
@@ -24,12 +28,18 @@ ZEND_EXTERN_MODULE_GLOBALS(phcrypt);
 #endif
 
 #ifndef EXPECTED
-# define EXPECTED(condition)   (condition)
-# define UNEXPECTED(condition) (condition)
+#	define EXPECTED(condition)   (condition)
+#	define UNEXPECTED(condition) (condition)
 #endif
 
-#ifndef PHP_FE_END
-#define PHP_FE_END            { NULL, NULL, NULL, 0, 0 }
+#if __GNUC__ + 0 >= 4
+#	define PHPCRYPT_VISIBILITY_HIDDEN __attribute__((visibility("hidden")))
+#else
+#	define PHPCRYPT_VISIBILITY_HIDDEN
 #endif
 
+#if !defined(PHCRYPT_HAVE_LIBMCRYPT) && !defined(PHCRYPT_HAVE_OPENSSL)
+#	error "Neither MCrypt nor OpenSSL is enabled :-("
 #endif
+
+#endif /* PHP_PHCRYPT_H */

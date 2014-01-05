@@ -1,6 +1,6 @@
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
+#include "php_phcrypt.h"
+
+#ifdef PHCRYPT_HAVE_LIBMCRYPT
 
 #include "phcrypt_mcrypt.h"
 
@@ -15,6 +15,8 @@
 #if PHP_WIN32
 #include <win32/winutil.h>
 #endif
+
+#include "arginfo.h"
 
 zend_class_entry* phcrypt_mcrypt_ce;
 
@@ -501,11 +503,8 @@ static PHP_METHOD(Phalcon_Ext_Crypt_MCrypt, getAvailableCiphers)
 	}
 
 	modules = mcrypt_list_algorithms(PHG(mcrypt_algorithms_dir), &count);
-#if PHP_VERSION_ID >= 50300
+
 	array_init_size(return_value, count);
-#else
-	array_init(return_value);
-#endif
 	for (i=0; i<count; ++i) {
 		add_next_index_string(return_value, modules[i], 1);
 	}
@@ -523,11 +522,8 @@ static PHP_METHOD(Phalcon_Ext_Crypt_MCrypt, getAvailableModes)
 	}
 
 	modes = mcrypt_list_modes(PHG(mcrypt_modes_dir), &count);
-#if PHP_VERSION_ID >= 50300
+
 	array_init_size(return_value, count);
-#else
-	array_init(return_value);
-#endif
 	for (i=0; i<count; ++i) {
 		add_next_index_string(return_value, modes[i], 1);
 	}
@@ -688,31 +684,6 @@ static PHP_METHOD(Phalcon_Ext_Crypt_MCrypt, getBlockSize)
 	RETVAL_LONG(mcrypt_module_get_algo_block_size(cipher, PHG(mcrypt_algorithms_dir)));
 }
 
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_empty, 0, 0, 0)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_setcipher, 0, 0, 1)
-	ZEND_ARG_INFO(0, cipher)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_setmode, 0, 0, 1)
-	ZEND_ARG_INFO(0, mode)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_setkey, 0, 0, 1)
-	ZEND_ARG_INFO(0, key)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_endecrypt, 0, 0, 1)
-	ZEND_ARG_INFO(0, text)
-	ZEND_ARG_INFO(0, key)
-ZEND_END_ARG_INFO()
-
-ZEND_BEGIN_ARG_INFO_EX(arginfo_unserialize, 0, 0, 1)
-	ZEND_ARG_INFO(0, str)
-ZEND_END_ARG_INFO()
-
 ZEND_BEGIN_ARG_INFO_EX(arginfo_isblockcipher, 0, 0, 0)
 	ZEND_ARG_INFO(0, cipher)
 ZEND_END_ARG_INFO()
@@ -720,7 +691,6 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO_EX(arginfo_isblockmode, 0, 0, 0)
 	ZEND_ARG_INFO(0, mode)
 ZEND_END_ARG_INFO()
-
 
 static
 #if ZEND_MODULE_API_NO > 20060613
@@ -798,8 +768,6 @@ static zend_object_value phcrypt_mcrypt_ctor(zend_class_entry* ce TSRMLS_DC)
 	return retval;
 }
 
-#if PHP_VERSION_ID >= 50300
-
 static HashTable* phcrypt_mcrypt_get_debug_info(zval* object, int* is_temp TSRMLS_DC)
 {
 	HashTable* ht;
@@ -844,23 +812,6 @@ static HashTable* phcrypt_mcrypt_get_debug_info(zval* object, int* is_temp TSRML
 	return ht;
 }
 
-#endif
-
-#if PHP_VERSION_ID < 50300
-static int zend_class_serialize_deny(zval* object, unsigned char** buffer, zend_uint* buf_len, zend_serialize_data* data TSRMLS_DC)
-{
-	zend_class_entry* ce = Z_OBJCE_P(object);
-	zend_throw_exception_ex(NULL, 0 TSRMLS_CC, "Serialization of '%s' is not allowed", ce->name);
-	return FAILURE;
-}
-
-static int zend_class_unserialize_deny(zval** object, zend_class_entry* ce, const unsigned char* buf, zend_uint buf_len, zend_unserialize_data* data TSRMLS_DC)
-{
-	zend_throw_exception_ex(NULL, 0 TSRMLS_CC, "Unserialization of '%s' is not allowed", ce->name);
-	return FAILURE;
-}
-#endif
-
 int init_phcrypt_mcrypt(zend_class_entry* iface TSRMLS_DC)
 {
 	zend_class_entry e;
@@ -874,9 +825,7 @@ int init_phcrypt_mcrypt(zend_class_entry* iface TSRMLS_DC)
 		phcrypt_mcrypt_ce->unserialize   = zend_class_unserialize_deny;
 
 		phcrypt_mcrypt_object_handlers = *zend_get_std_object_handlers();
-#if PHP_VERSION_ID >= 50300
 		phcrypt_mcrypt_object_handlers.get_debug_info = phcrypt_mcrypt_get_debug_info;
-#endif
 
 		if (iface) {
 			zend_class_implements(phcrypt_mcrypt_ce TSRMLS_CC, 2, iface, zend_ce_serializable);
@@ -890,3 +839,5 @@ int init_phcrypt_mcrypt(zend_class_entry* iface TSRMLS_DC)
 
 	return FAILURE;
 }
+
+#endif /* PHCRYPT_HAVE_LIBMCRYPT_H */

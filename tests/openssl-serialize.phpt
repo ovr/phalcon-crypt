@@ -1,10 +1,10 @@
 --TEST--
-Serialize/unserialize
+Serialize/unserialize (OpenSSL)
 --SKIPIF--
-<?php include('skipif.inc'); ?>
+<?php include('skipif-openssl.inc'); ?>
 --FILE--
 <?php
-$c = new \Phalcon\Ext\Crypt\MCrypt;
+$c = new \Phalcon\Ext\Crypt\OpenSSL;
 
 assert($c instanceof \Serializable);
 
@@ -18,7 +18,7 @@ catch (Exception $e) {
 }
 
 try {
-	$s = 'O:24:"Phalcon\\Ext\\Crypt\\MCrypt":0:{}';
+	$s = 'O:25:"Phalcon\\Ext\\Crypt\\OpenSSL":0:{}';
 	$c2 = unserialize($s);
 	assert(false);
 }
@@ -28,7 +28,7 @@ catch (Exception $e) {
 }
 
 try {
-	$s = 'C:24:"Phalcon\\Ext\\Crypt\\MCrypt":0:{}';
+	$s = 'C:25:"Phalcon\\Ext\\Crypt\\OpenSSL":0:{}';
 	$c3 = @unserialize($s); // PHP up to 5.5 shows a notice here
 	assert(false);
 }
@@ -50,7 +50,7 @@ catch (Exception $e) {
 }
 ?>
 --EXPECT--
-Serialization of 'Phalcon\Ext\Crypt\MCrypt' is not allowed
-Unserialization of 'Phalcon\Ext\Crypt\MCrypt' is not allowed
-Unserialization of 'Phalcon\Ext\Crypt\MCrypt' is not allowed
-Unserialization of 'Phalcon\Ext\Crypt\MCrypt' is not allowed
+Serialization of 'Phalcon\Ext\Crypt\OpenSSL' is not allowed
+Unserialization of 'Phalcon\Ext\Crypt\OpenSSL' is not allowed
+Unserialization of 'Phalcon\Ext\Crypt\OpenSSL' is not allowed
+Unserialization of 'Phalcon\Ext\Crypt\OpenSSL' is not allowed

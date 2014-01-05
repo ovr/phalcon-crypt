@@ -27,3 +27,4 @@ run-tests.php
 *.gcda
 /.coverage
 /coverage
+/include

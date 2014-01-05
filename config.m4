@@ -17,8 +17,11 @@ AC_DEFUN([MCRYPT_CHECK_VERSION],[
 
 PHP_ARG_ENABLE([phcrypt], [whether to enable Phalcon Crypt module], [  --enable-phalcon-crypt  Enable Phalcon Crypt module])
 if test "$PHP_PHCRYPT" != no; then
-	PHP_ARG_WITH([mcrypt], [for mcrypt support], [  --with-mcrypt[=DIR]       Include mcrypt support])
 
+dnl
+dnl MCrypt
+dnl
+	PHP_ARG_WITH([mcrypt], [for mcrypt support], [  --with-mcrypt[=DIR]       Include mcrypt support])
 	if test "$PHP_MCRYPT" != "no"; then
 		for i in $PHP_MCRYPT /usr/local /usr; do
 			test -f $i/include/mcrypt.h && MCRYPT_DIR=$i && break
@@ -33,11 +36,11 @@ if test "$PHP_PHCRYPT" != no; then
 		PHP_CHECK_LIBRARY([mcrypt], [mcrypt_module_open],
 			[
 				PHP_ADD_LIBRARY(ltdl,, MCRYPT_SHARED_LIBADD)
-				AC_DEFINE(HAVE_LIBMCRYPT,1,[ ])
+				AC_DEFINE(PHCRYPT_HAVE_LIBMCRYPT, 1, [ ])
 			],
 			[
 				PHP_CHECK_LIBRARY([mcrypt], [mcrypt_module_open],
-					[AC_DEFINE(HAVE_LIBMCRYPT,1,[ ])],
+					[AC_DEFINE(PHCRYPT_HAVE_LIBMCRYPT, 1, [ ])],
 					[AC_MSG_ERROR([Unable to find out libmcrypt version.])],
 					[-L$MCRYPT_DIR/$PHP_LIBDIR]
 				)
@@ -51,7 +54,26 @@ if test "$PHP_PHCRYPT" != no; then
 		PHP_SUBST([MCRYPT_SHARED_LIBADD])
 	fi
 
-	PHP_NEW_EXTENSION([phcrypt], [phcrypt.c phcrypt_mcrypt.c], [$ext_shared])
+dnl
+dnl OpenSSL
+dnl
+	PHP_ARG_WITH(openssl, for OpenSSL support, [  --with-openssl[=DIR]    Include OpenSSL support (requires OpenSSL >= 0.9.6)])
+
+	if test "$PHP_OPENSSL" != "no"; then
+		PHP_SUBST(OPENSSL_SHARED_LIBADD)
+
+		PHP_SETUP_OPENSSL(OPENSSL_SHARED_LIBADD,
+			[
+				AC_DEFINE(PHCRYPT_HAVE_OPENSSL, 1, [ ])
+			],
+			[
+				AC_MSG_ERROR([OpenSSL check failed. Please check config.log for more information.])
+			]
+		)
+	fi
+
+
+	PHP_NEW_EXTENSION([phcrypt], [phcrypt.c phcrypt_mcrypt.c phcrypt_openssl.c], [$ext_shared])
 	PHP_ADD_MAKEFILE_FRAGMENT
 
 	PHP_ARG_ENABLE([coverage], [whether to include code coverage symbols], [  --enable-coverage         Enable code coverage symbols], no, no)
