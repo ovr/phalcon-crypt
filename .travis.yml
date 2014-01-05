@@ -15,7 +15,7 @@ before_install:
   - sudo apt-get -qq install libmcrypt-dev libssl-dev valgrind
 
 before_script:
-  - phpize && ./configure CFLAGS="-O1 -g3 -Wall -Werror" && make --silent
+  - phpize && ./configure CFLAGS="-O0 -g3 -Wall -Werror" && make --silent
   - ulimit -c unlimited
 
 script:
