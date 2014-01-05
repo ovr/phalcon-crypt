@@ -4,6 +4,7 @@
 
 #include "php_phcrypt.h"
 #include "phcrypt_mcrypt.h"
+#include "phcrypt_openssl.h"
 
 #include <main/php.h>
 #include <main/php_ini.h>
@@ -29,12 +30,29 @@ static PHP_MINIT_FUNCTION(phcrypt)
 		phalcon_cryptinterface_ce = *pce;
 	}
 
-	return init_phcrypt_mcrypt(phalcon_cryptinterface_ce TSRMLS_CC);
+#ifdef PHCRYPT_HAVE_LIBMCRYPT
+	if (FAILURE == init_phcrypt_mcrypt(phalcon_cryptinterface_ce TSRMLS_CC)) {
+		return FAILURE;
+	}
+#endif
+
+#ifdef PHCRYPT_HAVE_OPENSSL
+	if (FAILURE == init_phcrypt_openssl(phalcon_cryptinterface_ce TSRMLS_CC)) {
+		return FAILURE;
+	}
+#endif
+
+	return SUCCESS;
 }
 
 static PHP_MSHUTDOWN_FUNCTION(phcrypt)
 {
 	UNREGISTER_INI_ENTRIES();
+
+#ifdef PHCRYPT_HAVE_OPENSSL
+	shutdown_phcrypt_openssl(TSRMLS_C);
+#endif
+
 	return SUCCESS;
 }
 
@@ -43,11 +61,7 @@ static PHP_MINFO_FUNCTION(phcrypt)
 	DISPLAY_INI_ENTRIES();
 }
 
-static
-#if ZEND_MODULE_API_NO > 20060613
-const
-#endif
-zend_module_dep phcrypt_deps[] = {
+static const zend_module_dep phcrypt_deps[] = {
 	ZEND_MOD_REQUIRED("spl")
 	ZEND_MOD_OPTIONAL("phalcon")
 	ZEND_MOD_END

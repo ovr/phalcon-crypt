@@ -36,11 +36,11 @@ dnl
 		PHP_CHECK_LIBRARY([mcrypt], [mcrypt_module_open],
 			[
 				PHP_ADD_LIBRARY(ltdl,, MCRYPT_SHARED_LIBADD)
-				AC_DEFINE(HAVE_LIBMCRYPT,1,[ ])
+				AC_DEFINE(PHCRYPT_HAVE_LIBMCRYPT, 1, [ ])
 			],
 			[
 				PHP_CHECK_LIBRARY([mcrypt], [mcrypt_module_open],
-					[AC_DEFINE(HAVE_LIBMCRYPT,1,[ ])],
+					[AC_DEFINE(PHCRYPT_HAVE_LIBMCRYPT, 1, [ ])],
 					[AC_MSG_ERROR([Unable to find out libmcrypt version.])],
 					[-L$MCRYPT_DIR/$PHP_LIBDIR]
 				)
@@ -62,12 +62,9 @@ dnl
 	if test "$PHP_OPENSSL" != "no"; then
 		PHP_SUBST(OPENSSL_SHARED_LIBADD)
 
-		AC_CHECK_LIB(ssl, DSA_get_default_method, AC_DEFINE(HAVE_DSA_DEFAULT_METHOD, 1, [OpenSSL 0.9.7 or later]))
-		AC_CHECK_LIB(crypto, X509_free, AC_DEFINE(HAVE_DSA_DEFAULT_METHOD, 1, [OpenSSL 0.9.7 or later]))
-
 		PHP_SETUP_OPENSSL(OPENSSL_SHARED_LIBADD,
 			[
-				AC_DEFINE(HAVE_OPENSSL_EXT,1,[ ])
+				AC_DEFINE(PHCRYPT_HAVE_OPENSSL, 1, [ ])
 			],
 			[
 				AC_MSG_ERROR([OpenSSL check failed. Please check config.log for more information.])
@@ -76,7 +73,7 @@ dnl
 	fi
 
 
-	PHP_NEW_EXTENSION([phcrypt], [phcrypt.c phcrypt_mcrypt.c], [$ext_shared])
+	PHP_NEW_EXTENSION([phcrypt], [phcrypt.c phcrypt_mcrypt.c phcrypt_openssl.c], [$ext_shared])
 	PHP_ADD_MAKEFILE_FRAGMENT
 
 	PHP_ARG_ENABLE([coverage], [whether to include code coverage symbols], [  --enable-coverage         Enable code coverage symbols], no, no)
@@ -139,4 +136,3 @@ dnl
 		EXTRA_LDFLAGS="$EXTRA_LDFLAGS -precious-files-regex \.gcno\\\$$"
 	fi
 fi
-
