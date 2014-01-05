@@ -15,6 +15,7 @@
 #include <openssl/ssl.h>
 #include <openssl/crypto.h>
 #include <openssl/objects.h>
+#include <openssl/rand.h>
 
 #if PHP_WIN32
 #include <win32/winutil.h>
@@ -38,9 +39,9 @@ static inline phcrypt_openssl_object* get_object(zval* obj TSRMLS_DC)
 	return (phcrypt_openssl_object*)zend_object_store_get_object(obj TSRMLS_CC);
 }
 
-static char* create_iv(size_t size, size_t alloc)
+static unsigned char* create_iv(size_t size, size_t alloc)
 {
-	char* iv;
+	unsigned char* iv;
 
 	iv = ecalloc(alloc + 1, 1);
 	if (size) {
@@ -51,22 +52,7 @@ static char* create_iv(size_t size, size_t alloc)
 			return NULL;
 		}
 #else
-		size_t read_bytes = 0;
-		int fd = open("/dev/urandom", O_RDONLY);
-		if (EXPECTED(fd >= 0)) {
-			while (read_bytes < size) {
-				ssize_t n = read(fd, iv + read_bytes, size - read_bytes);
-				if (n < 0) {
-					break;
-				}
-
-				read_bytes += n;
-			}
-
-			close(fd);
-		}
-
-		if (UNEXPECTED(read_bytes != size)) {
+		if (RAND_pseudo_bytes(iv, size) < 0) {
 			efree(iv);
 			return NULL;
 		}
@@ -105,7 +91,7 @@ static int do_encrypt(const EVP_CIPHER* cipher, const char* text, uint text_len,
 	}
 
 	out_len = text_len + block_size;
-	out_buf = (unsigned char*)create_iv(iv_size, iv_size + out_len);
+	out_buf = create_iv(iv_size, iv_size + out_len);
 
 	if (EXPECTED(out_buf != NULL)) {
 		EVP_EncryptInit(&cipher_ctx, cipher, NULL, NULL);
