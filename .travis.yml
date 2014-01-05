@@ -12,10 +12,15 @@ php:
   - 5.5
 
 before_install:
-  - sudo apt-get -qq install libmcrypt-dev
+  - sudo apt-get -qq install libmcrypt-dev libssl-dev valgrind
 
 before_script:
-  - phpize && ./configure CFLAGS="-O2 -g -Wall -Werror" --silent && make --silent
+  - phpize && ./configure CFLAGS="-O1 -g3 -Wall -Werror" && make --silent
+  - ulimit -c unlimited
 
 script:
-  - NO_INTERACTION=1 make test
+  - ./.travis/run_php_tests.sh
+
+after_failure:
+  - ./.travis/after_failure.sh
+
