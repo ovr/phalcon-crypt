@@ -8,6 +8,7 @@
 #include <Zend/zend_exceptions.h>
 #include <Zend/zend_interfaces.h>
 #include <ext/standard/base64.h>
+#include <ext/standard/php_string.h>
 #include <ext/spl/spl_exceptions.h>
 #include <mcrypt.h>
 #include <fcntl.h>
@@ -422,8 +423,9 @@ static PHP_METHOD(Phalcon_Ext_Crypt_MCrypt, encryptBase64)
 	char* encrypted;
 	uint text_len, key_len, encrypted_len;
 	phcrypt_mcrypt_object* obj;
+	zend_bool safe = 0;
 
-	if (UNEXPECTED(FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|s", &text, &text_len, &key, &key_len))) {
+	if (UNEXPECTED(FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|sb", &text, &text_len, &key, &key_len, &safe))) {
 		RETURN_NULL();
 	}
 
@@ -444,6 +446,10 @@ static PHP_METHOD(Phalcon_Ext_Crypt_MCrypt, encryptBase64)
 		int encoded_len;
 
 		encoded = (char*)php_base64_encode((unsigned char*)encrypted, encrypted_len, &encoded_len);
+		if (safe) {
+			php_strtr(encoded, encoded_len, "+/", "-_", 2);
+		}
+
 		RETVAL_STRINGL(encoded, encoded_len, 0);
 		efree(encrypted);
 	}
@@ -461,12 +467,22 @@ static PHP_METHOD(Phalcon_Ext_Crypt_MCrypt, decryptBase64)
 	uint text_len, key_len, decrypted_len;
 	int decoded_len;
 	phcrypt_mcrypt_object* obj;
+	zend_bool safe = 0;
 
-	if (UNEXPECTED(FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|s", &text, &text_len, &key, &key_len))) {
+	if (UNEXPECTED(FAILURE == zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|sb", &text, &text_len, &key, &key_len, &safe))) {
 		RETURN_NULL();
 	}
 
-	decoded = (char*)php_base64_decode((unsigned char*)text, (int)text_len, &decoded_len);
+	if (safe) {
+		char* copy = estrndup(text, text_len);
+		php_strtr(copy, text_len, "-_", "+/", 2);
+		decoded = (char*)php_base64_decode((unsigned char*)copy, (int)text_len, &decoded_len);
+		efree(copy);
+	}
+	else {
+		decoded = (char*)php_base64_decode((unsigned char*)text, (int)text_len, &decoded_len);
+	}
+
 	if (!decoded) {
 		RETURN_FALSE;
 	}
@@ -706,8 +722,8 @@ zend_function_entry phcrypt_mcrypt_class_methods[] = {
 	PHP_ME(Phalcon_Ext_Crypt_MCrypt, setKey, arginfo_setkey, ZEND_ACC_PUBLIC)
 	PHP_ME(Phalcon_Ext_Crypt_MCrypt, encrypt, arginfo_endecrypt, ZEND_ACC_PUBLIC)
 	PHP_ME(Phalcon_Ext_Crypt_MCrypt, decrypt, arginfo_endecrypt, ZEND_ACC_PUBLIC)
-	PHP_ME(Phalcon_Ext_Crypt_MCrypt, encryptBase64, arginfo_endecrypt, ZEND_ACC_PUBLIC)
-	PHP_ME(Phalcon_Ext_Crypt_MCrypt, decryptBase64, arginfo_endecrypt, ZEND_ACC_PUBLIC)
+	PHP_ME(Phalcon_Ext_Crypt_MCrypt, encryptBase64, arginfo_endecrypt64, ZEND_ACC_PUBLIC)
+	PHP_ME(Phalcon_Ext_Crypt_MCrypt, decryptBase64, arginfo_endecrypt64, ZEND_ACC_PUBLIC)
 	PHP_ME(Phalcon_Ext_Crypt_MCrypt, getAvailableCiphers, arginfo_empty, ZEND_ACC_PUBLIC)
 	PHP_ME(Phalcon_Ext_Crypt_MCrypt, getAvailableModes, arginfo_empty, ZEND_ACC_PUBLIC)
 	PHP_ME(Phalcon_Ext_Crypt_MCrypt, __wakeup, arginfo_empty, ZEND_ACC_PUBLIC)
